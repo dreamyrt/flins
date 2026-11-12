@@ -752,7 +752,7 @@ export default function App() {
                 }`}
                 title={strings.aiHelper}
               >
-                <span className="star-glyph sparkle-wiggle text-[30px] leading-none select-none relative -top-[3.3px] flex items-center justify-center font-bold">
+                <span className="star-glyph ai-star sparkle-wiggle text-[30px] leading-none select-none relative -top-[3.3px] flex items-center justify-center font-bold">
                   ✦
                 </span>
                 <span className="font-serif tracking-wide font-semibold text-xs leading-none flex items-center">
