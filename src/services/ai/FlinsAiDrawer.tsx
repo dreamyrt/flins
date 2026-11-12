@@ -347,7 +347,7 @@ export default function FlinsAiDrawer({
         <div className="p-3 border-b border-cozy-border/60 dark:border-night-border/60 flex items-center justify-between bg-cozy-surface/70 dark:bg-night-surface/70">
           <div className="flex items-center gap-2.5">
             <span className="w-9 h-9 rounded-xl bg-cozy-accent/15 dark:bg-night-accent/20 text-cozy-accent dark:text-night-accent flex items-center justify-center select-none shadow-xs flex-shrink-0">
-              <span className="text-[26px] leading-none relative -top-[1.5px] font-bold">✦</span>
+              <span className="star-glyph text-[26px] leading-none relative -top-[1.5px] font-bold">✦</span>
             </span>
             <div>
               <h3 className="text-xs font-serif font-bold text-cozy-text dark:text-night-text tracking-wide">
@@ -445,7 +445,7 @@ export default function FlinsAiDrawer({
             className={`flex gap-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             {msg.sender === 'assistant' && (
-              <div className="w-6 h-6 rounded-lg bg-cozy-accent/15 dark:bg-night-accent/20 text-cozy-accent dark:text-night-accent flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-serif font-bold select-none">
+              <div className="star-glyph w-6 h-6 rounded-lg bg-cozy-accent/15 dark:bg-night-accent/20 text-cozy-accent dark:text-night-accent flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-serif font-bold select-none">
                 ✦
               </div>
             )}

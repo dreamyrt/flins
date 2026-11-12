@@ -39,7 +39,7 @@ export default function AiSparkleLoader({ lang = 'uk', size = 'md' }: AiSparkleL
       <div className="anim-glow-breath absolute inset-1.5 rounded-full bg-amber-400/30 dark:bg-purple-400/35 blur-md pointer-events-none" />
 
       {/* 2. Центральна зірка (+6px) */}
-      <span className={`${centerSizes[size]} text-cozy-accent dark:text-night-accent font-bold relative z-10 drop-shadow-md leading-none select-none`}>
+      <span className={`star-glyph ${centerSizes[size]} text-cozy-accent dark:text-night-accent font-bold relative z-10 drop-shadow-md leading-none select-none`}>
         ✦
       </span>
 
@@ -52,7 +52,7 @@ export default function AiSparkleLoader({ lang = 'uk', size = 'md' }: AiSparkleL
 
       {/* 4. Другий супутник (+6px, проти годинникової стрілки на ширшій орбіті) */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-        <span className={`anim-orbit-ccw ${satSizes[size]} text-amber-500 dark:text-amber-300 font-bold opacity-85 drop-shadow-sm leading-none`}>
+        <span className={`star-glyph anim-orbit-ccw ${satSizes[size]} text-amber-500 dark:text-amber-300 font-bold opacity-85 drop-shadow-sm leading-none`}>
           ✦
         </span>
       </div>

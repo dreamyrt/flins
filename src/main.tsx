@@ -2,7 +2,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { isWindows } from './services/platform';
 import './index.css';
+
+// Маркер ОС для CSS (зірки: Segoe UI Symbol рендерить ✦ крупнішим за Lora)
+if (isWindows) document.documentElement.classList.add('win');
 
 // Локальні автономні шрифти (працюють 100% офлайн на Windows та macOS)
 import '@fontsource/plus-jakarta-sans/400.css';

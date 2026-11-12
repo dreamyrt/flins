@@ -283,6 +283,9 @@ export default function App() {
   // Надійний драг шапки: catch-all через булінг (data-tauri-drag-region реагує лише
   // на «свій» елемент, а шапка майже вся вкрита дітьми). Контроли — виключення.
   const handleHeaderDrag = (e: React.MouseEvent) => {
+    // Поки календар відкритий — drag вимкнено: інакше mousedown на бекдроп
+    // (fixed div, не кнопка) чіпає OS-drag і клік «закрити» ніколи не доходить.
+    if (isCalendarOpen) return;
     const el = e.target as HTMLElement;
     if (el.closest('button, input, select, a, textarea, [role="menuitem"]')) return;
     getCurrentWindow().startDragging().catch(() => {});
@@ -749,7 +752,7 @@ export default function App() {
                 }`}
                 title={strings.aiHelper}
               >
-                <span className="sparkle-wiggle text-[30px] leading-none select-none relative -top-[3.3px] flex items-center justify-center font-bold">
+                <span className="star-glyph sparkle-wiggle text-[30px] leading-none select-none relative -top-[3.3px] flex items-center justify-center font-bold">
                   ✦
                 </span>
                 <span className="font-serif tracking-wide font-semibold text-xs leading-none flex items-center">
@@ -846,7 +849,7 @@ export default function App() {
                         className="group relative w-10 h-10 flex items-center justify-center cursor-pointer text-cozy-accent dark:text-night-accent hover:scale-110 transition-transform"
                         title={strings.updateRemarkHint}
                       >
-                        <span className="sparkle-wiggle text-[37px] leading-none select-none font-bold pointer-events-none">
+                        <span className="star-glyph sparkle-wiggle text-[37px] leading-none select-none font-bold pointer-events-none">
                           ✦
                         </span>
                         <span className="opacity-0 group-hover:opacity-90 transition-opacity font-serif italic text-[10px] text-cozy-muted absolute -top-5 whitespace-nowrap pointer-events-none bg-cozy-surface/90 dark:bg-night-surface/90 px-1.5 py-0.5 rounded shadow-xs border border-cozy-border/40">

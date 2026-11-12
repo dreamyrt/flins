@@ -80,7 +80,7 @@ function AiRewriteButton({ onRewrite, lang }: { onRewrite?: (text: string) => vo
       className="ai-shimmer-btn flex items-center justify-center w-7 h-7 rounded text-cozy-accent dark:text-night-accent hover:scale-110 transition-transform border border-cozy-accent/30 dark:border-night-accent/40 cursor-pointer"
       title={lang === 'uk' ? 'Перефразувати через Flins AI' : 'Rewrite with Flins AI'}
     >
-      <span className="text-[24px] leading-none select-none relative -top-[1.5px] font-bold">✦</span>
+      <span className="star-glyph text-[24px] leading-none select-none relative -top-[1.5px] font-bold">✦</span>
     </button>
   );
 }

@@ -78,6 +78,13 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   background-clip: content-box;
 }
 
+/* ── Зірка ✦ ──────────────────────────────────────────────── */
+/* На Windows гліф із фолбека Segoe UI Symbol виглядає помітно більшим, */
+/* ніж Lora на macOS. Платформоклас .win на <html> ставиться в main.tsx. */
+html.win .star-glyph {
+  zoom: 0.78;
+}
+
 @keyframes cozyPopIn {
   0% {
     opacity: 0;
