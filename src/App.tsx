@@ -2,10 +2,10 @@ import { useState, useRef, useEffect, Component, ErrorInfo, ReactNode } from 're
 import {
   BookOpen, FolderClosed, Moon, Sun, Settings,
   FileText, Bookmark, Grid, PanelLeftClose, PanelLeft,
-  Plus, Star, Calendar, Share2, Trash2, ChevronDown, Monitor, CheckCircle2, RefreshCw,
-  Sparkle
+  Plus, Star, Calendar, Share2, Trash2, ChevronDown, Monitor, CheckCircle2, RefreshCw
 } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import Editor, { EditorHandle } from './components/editor/Editor';
 import NotesManager from './notes/NotesManager';
 import SettingsModal, { UserProfile, AestheticsConfig, ThemeMode } from './settings/SettingsModal';
@@ -267,7 +267,7 @@ export default function App() {
   }, [isAiOpen]);
 
   useEffect(() => {
-    const handleGlobalClick = () => setTabContextMenu(null);
+      const handleGlobalClick = () => setTabContextMenu(null);
     window.addEventListener('click', handleGlobalClick);
     return () => window.removeEventListener('click', handleGlobalClick);
   }, []);
@@ -278,6 +278,14 @@ export default function App() {
     else if (themeMode === 'light') next = 'dark';
     setThemeMode(next);
     dbService.saveSetting('themeMode', next);
+  };
+
+  // Надійний драг шапки: catch-all через булінг (data-tauri-drag-region реагує лише
+  // на «свій» елемент, а шапка майже вся вкрита дітьми). Контроли — виключення.
+  const handleHeaderDrag = (e: React.MouseEvent) => {
+    const el = e.target as HTMLElement;
+    if (el.closest('button, input, select, a, textarea, [role="menuitem"]')) return;
+    getCurrentWindow().startDragging().catch(() => {});
   };
 
   const toggleFlinsAi = () => {
@@ -558,6 +566,7 @@ export default function App() {
         {/* Шапка */}
         <header
                   data-tauri-drag-region
+                  onMouseDown={handleHeaderDrag}
                   className={`h-12 border-b border-cozy-border dark:border-night-border flex items-center justify-between px-3 bg-cozy-surface/60 dark:bg-night-surface/30 select-none gap-2 min-w-0 relative overflow-visible ${
                     isCalendarOpen ? 'z-[4000]' : 'z-30'
                   }`}
@@ -740,8 +749,8 @@ export default function App() {
                 }`}
                 title={strings.aiHelper}
               >
-                <span className="sparkle-wiggle leading-none select-none relative -top-[3.3px] flex items-center justify-center">
-                  <Sparkle size={20} strokeWidth={2.2} />
+                <span className="sparkle-wiggle text-[30px] leading-none select-none relative -top-[3.3px] flex items-center justify-center font-bold">
+                  ✦
                 </span>
                 <span className="font-serif tracking-wide font-semibold text-xs leading-none flex items-center">
                   {isAiOpen ? 'AI' : 'Flins AI'}
@@ -837,8 +846,8 @@ export default function App() {
                         className="group relative w-10 h-10 flex items-center justify-center cursor-pointer text-cozy-accent dark:text-night-accent hover:scale-110 transition-transform"
                         title={strings.updateRemarkHint}
                       >
-                        <span className="sparkle-wiggle leading-none select-none font-bold pointer-events-none flex items-center justify-center">
-                          <Sparkle size={30} strokeWidth={2.2} />
+                        <span className="sparkle-wiggle text-[37px] leading-none select-none font-bold pointer-events-none">
+                          ✦
                         </span>
                         <span className="opacity-0 group-hover:opacity-90 transition-opacity font-serif italic text-[10px] text-cozy-muted absolute -top-5 whitespace-nowrap pointer-events-none bg-cozy-surface/90 dark:bg-night-surface/90 px-1.5 py-0.5 rounded shadow-xs border border-cozy-border/40">
                           {strings.pageSummaryHint}
