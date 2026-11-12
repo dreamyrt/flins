@@ -1,6 +1,6 @@
 [package]
 name = "flins"
-version = "0.1.0"
+version = "0.1.1"
 description = "Flins — Native Private Journal & Notes with AI Librarian"
 authors = ["dreamyr"]
 edition = "2024"
