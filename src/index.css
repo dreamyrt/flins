@@ -1,0 +1,224 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    background-color: #FAF7F2;
+    color: #3C3836;
+  }
+
+  html.dark {
+    background-color: #181920;
+    color: #E2E4E9;
+  }
+
+  body {
+    @apply antialiased;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+}
+
+/* Фактури сторінки */
+.paper-margin-line {
+  border-left: 2px solid rgba(200, 125, 85, 0.35) !important;
+}
+.dark .paper-margin-line {
+  border-left: 2px solid rgba(167, 139, 250, 0.35) !important;
+}
+
+.paper-dots {
+  background-image: radial-gradient(rgba(200, 180, 160, 0.4) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.dark .paper-dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+}
+
+/* Японський скотч Washi Tape */
+.washi-tape {
+  background: rgba(200, 125, 85, 0.22);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  backdrop-filter: blur(2px);
+}
+.dark .washi-tape {
+  background: rgba(167, 139, 250, 0.22);
+}
+
+/* Нативна плавна анімація появи */
+@keyframes cozyPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(-6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-cozy-pop {
+  animation: cozyPopIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top left;
+}
+
+/* Анімація для модалок */
+@keyframes modalScaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-modal-scale {
+  animation: modalScaleIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Одинарна анімація дрижання ✦ */
+@keyframes sparkleJiggleOnce {
+  0% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.25) rotate(-14deg); }
+  50% { transform: scale(1.1) rotate(12deg); }
+  75% { transform: scale(1.25) rotate(-6deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.group:hover .sparkle-wiggle {
+  animation: sparkleJiggleOnce 0.45s ease-out 1 forwards;
+}
+
+/* Бан меню редактора під час відкритого календаря */
+body.calendar-open [class*="side-menu" i],
+body.calendar-open [class*="sidemenu" i],
+body.calendar-open [class*="drag-handle" i],
+body.calendar-open [class*="draghandle" i],
+body.calendar-open [class*="toolbar" i],
+body.calendar-open [data-blocknote-side-menu],
+body.calendar-open [data-node-type="side-menu"],
+body.calendar-open .bn-side-menu,
+body.calendar-open .bn-toolbar {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.bn-container {
+  background: transparent !important;
+}
+
+.bn-editor {
+  background: transparent !important;
+  padding: 0 !important;
+  color: #3C3836 !important;
+}
+.dark .bn-editor {
+  color: #E2E4E9 !important;
+}
+
+.bn-toolbar {
+  background-color: #FFFFFF !important;
+  border: 1px solid #E8E1D7 !important;
+  color: #3C3836 !important;
+}
+
+.dark .bn-toolbar {
+  background-color: #20222C !important;
+  border-color: #323646 !important;
+  color: #E2E4E9 !important;
+}
+
+@media print {
+  body { background: white !important; color: black !important; }
+  aside, header, footer, .bn-toolbar, .bn-side-menu, button { display: none !important; }
+  main { background: transparent !important; padding: 0 !important; overflow: visible !important; }
+  .bg-cozy-card, .dark\:bg-night-card { border: none !important; box-shadow: none !important; padding: 0 !important; background: white !important; color: black !important; }
+}
+
+/* Анімація градієнтного переливання кнопки перефразування в тулбарі */
+@keyframes aiShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.ai-shimmer-btn {
+  background: linear-gradient(
+    90deg,
+    rgba(200, 125, 85, 0.12) 0%,
+    rgba(167, 139, 250, 0.35) 50%,
+    rgba(200, 125, 85, 0.12) 100%
+  );
+  background-size: 200% 100%;
+  animation: aiShimmer 3s ease-in-out infinite;
+}
+
+.dark .ai-shimmer-btn {
+  background: linear-gradient(
+    90deg,
+    rgba(167, 139, 250, 0.15) 0%,
+    rgba(196, 181, 253, 0.45) 50%,
+    rgba(167, 139, 250, 0.15) 100%
+  );
+  background-size: 200% 100%;
+  animation: aiShimmer 3s ease-in-out infinite;
+}
+@keyframes modalBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalBackdropOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes modalBoxIn {
+  from { opacity: 0; transform: scale(0.95) translateY(4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes modalBoxOut {
+  from { opacity: 1; transform: scale(1) translateY(0); }
+  to { opacity: 0; transform: scale(0.95) translateY(4px); }
+}
+
+.anim-modal-backdrop-in { animation: modalBackdropIn 0.18s ease-out forwards; }
+.anim-modal-backdrop-out { animation: modalBackdropOut 0.18s ease-in forwards; }
+
+.anim-modal-box-in { animation: modalBoxIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.anim-modal-box-out { animation: modalBoxOut 0.18s ease-in forwards; }
+
+/* Збільшена орбітальна анімація зірок Flins AI */
+@keyframes orbit-clockwise {
+  0% { transform: rotate(0deg) translateX(16px) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(16px) rotate(-360deg); }
+}
+
+@keyframes orbit-counter {
+  0% { transform: rotate(360deg) translateX(22px) rotate(-360deg); }
+  100% { transform: rotate(0deg) translateX(22px) rotate(0deg); }
+}
+
+@keyframes glow-breathing {
+  0%, 100% { opacity: 0.45; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.35); }
+}
+
+.anim-orbit-cw {
+  animation: orbit-clockwise 2.4s linear infinite;
+}
+
+.anim-orbit-ccw {
+  animation: orbit-counter 3.4s linear infinite;
+}
+
+.anim-glow-breath {
+  animation: glow-breathing 2s ease-in-out infinite;
+}
