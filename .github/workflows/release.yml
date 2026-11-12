@@ -1,0 +1,71 @@
+# .github/workflows/release.yml
+# Фаза 4: безкоштовний CI/CD для Flins (GitHub Actions, public repo).
+# Тригер: git-тег вигляду v0.2.0 → збірка macOS (Apple Silicon) і Windows (x64) →
+# draft-реліз з артефактами + latest.json для апдейтера. Реліз публікуєш вручну,
+# коли перевіриш артефакти (до публікації /releases/latest його не бачить).
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish-tauri:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-latest' # Apple Silicon (M1+)
+            args: '--target aarch64-apple-darwin'
+          # Intel Mac — розкоментуй, коли з'являться бажаючі (подвоїть macOS-хвилини):
+          # - platform: 'macos-latest'
+          #   args: '--target x86_64-apple-darwin'
+          - platform: 'windows-latest' # NSIS setup.exe + updater .sig
+            args: ''
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.15.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build & draft release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Секрети з GitHub (Settings → Secrets and variables → Actions).
+          # Приватний ключ ніколи не в репо — тільки тут.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: *** secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: v__VERSION__
+          releaseName: 'Flins v__VERSION__'
+          releaseBody: 'Windows: встановлюй .exe (працює автооновлення). macOS: .dmg вручну — автооновлення потребує Developer ID.'
+          releaseDraft: true
+          prerelease: false
+          updaterJsonPreferNsis: true
+          args: ${{ matrix.args }}
