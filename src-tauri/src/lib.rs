@@ -3,6 +3,8 @@ use db::Database;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
+// Manager потрібен лише для get_webview_window у cfg(windows) блоці нижче.
+#[allow(unused_imports)]
 use tauri::Manager;
 
 struct AppState {
@@ -220,6 +222,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            let _ = &app; // використовується лише у cfg(windows) гілці нижче
             // На Windows знімаємо стандартну системну рамку для наших затишних кнопок
             #[cfg(target_os = "windows")]
             {

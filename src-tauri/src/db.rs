@@ -288,6 +288,59 @@ fn migrate(conn: &Connection, mut version: i64) -> Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn tables(conn: &Connection) -> Vec<String> {
+        let mut stmt = conn
+            .prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+            .unwrap();
+        stmt.query_map([], |r| r.get::<_, String>(0))
+            .unwrap()
+            .filter_map(Result::ok)
+            .collect()
+    }
+
+    fn user_version(conn: &Connection) -> i64 {
+        conn.query_row("PRAGMA user_version", [], |r| r.get(0))
+            .unwrap()
+    }
+
+    #[test]
+    fn fresh_db_migrates_to_current_schema() {
+        let conn = Connection::open_in_memory().unwrap();
+        assert_eq!(user_version(&conn), 0);
+        migrate(&conn, 0).unwrap();
+        assert_eq!(user_version(&conn), SCHEMA_VERSION);
+        let t = tables(&conn);
+        for expected in ["app_settings", "folders", "journal_entries", "notes"] {
+            assert!(
+                t.iter().any(|x| x == expected),
+                "missing table {}",
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn migrate_is_idempotent_on_existing_v1_db() {
+        // Симуляція бази користувача версії 0.1.0: таблиці вже є, user_version = 0
+        let conn = Connection::open_in_memory().unwrap();
+        conn.execute_batch("CREATE TABLE journal_entries (date_key TEXT PRIMARY KEY);")
+            .unwrap();
+        migrate(&conn, 0).unwrap();
+        assert_eq!(user_version(&conn), SCHEMA_VERSION);
+    }
+
+    #[test]
+    fn refuses_downgrade() {
+        let conn = Connection::open_in_memory().unwrap();
+        let err = migrate(&conn, SCHEMA_VERSION + 1);
+        assert!(err.is_err());
+    }
+}
 // - macOS: ~/Library/Application Support/FlinsData (100% сумісність з вашою поточною базою!)
 // - Windows: %APPDATA%\FlinsData (C:\Users\<Name>\AppData\Roaming\FlinsData)
 // - Linux: ~/.local/share/FlinsData

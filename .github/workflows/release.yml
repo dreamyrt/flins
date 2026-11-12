@@ -53,6 +53,11 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
+      # Швидкі тести Rust-ядра (міграції БД). На матричному раннері — рідна архітектура.
+      - name: Run Rust tests
+        run: cargo test --quiet
+        working-directory: src-tauri
+
       - name: Build & draft release
         uses: tauri-apps/tauri-action@v0
         env:
@@ -64,7 +69,16 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: 'Flins v__VERSION__'
-          releaseBody: 'Windows: встановлюй .exe (працює автооновлення). macOS: .dmg вручну — автооновлення потребує Developer ID.'
+          releaseBody: |
+            **Windows:** завантажте та запустіть `Flins_..._x64-setup.exe` — автооновлення працює «з коробки».
+
+            **macOS:** завантажте `.dmg` — застосунок НЕ підписаний Developer ID (проєкт безкоштовний), тож Gatekeeper спершу скаже "пошкоджено". Вирішення в одну команду після встановлення в Applications:
+
+            ```
+            xattr -dr com.apple.quarantine /Applications/Flins.app
+            ```
+
+            Автооновлення на macOS планується після придбання Developer ID; поки що — оновлення вручну через цей Releases.
           releaseDraft: true
           prerelease: false
           updaterJsonPreferNsis: true

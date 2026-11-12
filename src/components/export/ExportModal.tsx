@@ -126,13 +126,23 @@ export default function ExportModal({
     triggerSafeDownload(getFullMarkdown(), `${safeFilename}_${exportScope}.md`, 'Markdown (.md)');
   };
 
+  // Екранування HTML-сущностей: без нього текст щоденника (або ШІ-генерований текст),
+  // що містить <теги>, виконується як JS у браузері після експорту → XSS.
+  const escapeHtml = (s: string) =>
+    s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
   const handleExportHTML = () => {
     const md = getFullMarkdown();
     const htmlTemplate = `<!DOCTYPE html>
 <html lang="${lang}">
 <head>
   <meta charset="UTF-8">
-  <title>${documentTitle}</title>
+  <title>${escapeHtml(documentTitle)}</title>
   <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Lora', Georgia, serif; background-color: #FAF7F2; color: #3C3836; line-height: 1.8; padding: 40px 20px; margin: 0; }
@@ -146,16 +156,18 @@ export default function ExportModal({
   </style>
 </head>
 <body>
-  <button class="print-btn" onclick="window.print()">${lang === 'uk' ? 'Зберегти як PDF / Друк' : 'Print / Save as PDF'}</button>
+  <button class="print-btn" onclick="window.print()">${escapeHtml(lang === 'uk' ? 'Зберегти як PDF / Друк' : 'Print / Save as PDF')}</button>
   <div class="paper">
     ${md
       .split('\n')
       .map(line => {
-        if (line.startsWith('# ')) return `<h1>${line.slice(2)}</h1>`;
-        if (line.startsWith('## ')) return `<h2>${line.slice(3)}</h2>`;
+        // Екрануємо КОЖНОВСИДНО: md згенерований з користувацького тексту
+        const safe = escapeHtml(line);
+        if (line.startsWith('# ')) return `<h1>${escapeHtml(line.slice(2))}</h1>`;
+        if (line.startsWith('## ')) return `<h2>${escapeHtml(line.slice(3))}</h2>`;
         if (line.startsWith('---')) return `<hr/>`;
         if (line.trim() === '') return '';
-        return `<p>${line}</p>`;
+        return `<p>${safe}</p>`;
       })
       .join('\n')}
   </div>
