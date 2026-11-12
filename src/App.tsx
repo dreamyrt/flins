@@ -514,7 +514,7 @@ export default function App() {
         <header
                   data-tauri-drag-region
                   className={`h-12 border-b border-cozy-border dark:border-night-border flex items-center justify-between px-3 bg-cozy-surface/60 dark:bg-night-surface/30 select-none gap-2 min-w-0 relative overflow-visible ${
-                    isCalendarOpen ? 'z-50' : 'z-30'
+                    isCalendarOpen ? 'z-[4000]' : 'z-30'
                   }`}
                 >
           {/* Ліва частина */}
