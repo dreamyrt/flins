@@ -1,11 +1,11 @@
 // src/services/updateService.ts
 // Оновлення Flins: GitHub Releases + minisign-підпис.
 // Windows: повний цикл (перевірка → завантаження → установка → перезапуск).
-// macOS (без Developer ID): План Б — відкриваємо сторінку Release в браузері.
+// macOS без Developer ID: теж пробуємо in-app (завантаження Rust-клієнтом не вішає
+// карантин), але при будь-якій помилці — автоматичний план Б: сторінка Releases.
 import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { openUrl } from '@tauri-apps/plugin-opener';
-import { isMac } from './platform';
 
 export const RELEASES_URL = 'https://github.com/dreamyrt/flins/releases/latest';
 
@@ -59,5 +59,3 @@ export async function openReleasesPage(): Promise<void> {
 export async function softRelaunch(): Promise<void> {
   await relaunch();
 }
-
-export const supportsInAppUpdate = !isMac;

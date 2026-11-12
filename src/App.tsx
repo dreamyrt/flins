@@ -28,7 +28,7 @@ import logoDarkTransparent from './assets/logo-dark-transparent.png';
 import logoLightTransparent from './assets/logo-light-transparent.png';
 import WindowControls from './components/common/WindowControls';
 import {
-  checkForUpdate, installUpdate, openReleasesPage, softRelaunch, supportsInAppUpdate,
+  checkForUpdate, installUpdate, openReleasesPage, softRelaunch,
 } from './services/updateService';
 
 
@@ -168,16 +168,13 @@ export default function App() {
   const handlePendingUpdateInstall = async () => {
     setUpdateInstalling(true);
     try {
-      if (supportsInAppUpdate) {
-        await installUpdate();
-        await softRelaunch();
-      } else {
-        await openReleasesPage();
-        setPendingUpdate(null);
-      }
+      await installUpdate();
+      await softRelaunch();
     } catch (err) {
       console.error('Update install failed:', err);
       setUpdateInstalling(false);
+      // План Б: не вдалося поставити — відкриваємо Releases у браузері
+      try { await openReleasesPage(); } catch (err2) { console.error(err2); }
       setPendingUpdate(null);
     }
   };
@@ -974,7 +971,7 @@ export default function App() {
         isOpen={pendingUpdate !== null}
         title={strings.updateFoundTitle}
         message={strings.updateFoundBody.replace('{version}', pendingUpdate ?? '')}
-        confirmText={updateInstalling ? strings.installing : supportsInAppUpdate ? strings.installUpdate : strings.openReleasePage}
+        confirmText={updateInstalling ? strings.installing : strings.installUpdate}
         cancelText={strings.close}
         onConfirm={handlePendingUpdateInstall}
         onClose={() => setPendingUpdate(null)}

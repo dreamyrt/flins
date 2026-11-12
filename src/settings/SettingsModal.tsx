@@ -1,5 +1,6 @@
 // src/settings/SettingsModal.tsx
 import { useState, useEffect } from 'react';
+import { getVersion } from '@tauri-apps/api/app';
 import {
   X, Globe, Maximize2, Cpu, User, Sliders, ZoomIn,
   RotateCcw, Monitor, Sun, Moon, Info, Volume2, FolderOpen, HelpCircle,
@@ -7,7 +8,7 @@ import {
   Download
 } from 'lucide-react';
 import {
-  checkForUpdate, installUpdate, openReleasesPage, softRelaunch, supportsInAppUpdate,
+  checkForUpdate, installUpdate, openReleasesPage, softRelaunch,
 } from '../services/updateService';
 import { invoke } from '@tauri-apps/api/core';
 import { Lang, t } from '../services/i18n';
@@ -95,6 +96,12 @@ export default function SettingsModal({
 }: SettingsModalProps) {
   // Стан розгортання підказки про приватність сховища (має бути ВСЕРЕДИНІ компонента!)
   const [showVaultSecurity, setShowVaultSecurity] = useState(false);
+  // Справжня версія збірки (та сама, з якою будується updater), а не заглушка в словнику
+  const [appVersion, setAppVersion] = useState<string>('…');
+  useEffect(() => {
+    getVersion().then(setAppVersion).catch(() => setAppVersion('dev'));
+  }, []);
+
   const [isAiHelpOpen, setIsAiHelpOpen] = useState(false);
   const [shouldRender, setShouldRender] = useState(isOpen);
   const [isAnimated, setIsAnimated] = useState(false);
@@ -119,11 +126,6 @@ export default function SettingsModal({
   };
 
   const handleInstallUpdate = async () => {
-    // План Б (macOS без Developer ID): відкриваємо Releases у браузері
-    if (!supportsInAppUpdate) {
-      try { await openReleasesPage(); } catch (err) { console.error(err); }
-      return;
-    }
     setUpdState((s) => ({ ...s, phase: 'installing', pct: 0 }));
     try {
       await installUpdate(({ downloaded, total }) =>
@@ -135,7 +137,9 @@ export default function SettingsModal({
       await softRelaunch();
     } catch (err) {
       console.error('Update install failed:', err);
+      // Автоматичний план Б (macOS без Developer ID тощо): не встигло — відкриваємо Releases
       setUpdState((s) => ({ ...s, phase: 'available' }));
+      try { await openReleasesPage(); } catch (err2) { console.error(err2); }
     }
   };
 
@@ -780,7 +784,7 @@ export default function SettingsModal({
                   onClick={handleInstallUpdate}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cozy-accent text-white dark:bg-night-accent dark:text-night-bg text-xs font-medium shadow-xs cursor-pointer hover:opacity-90 transition-opacity"
                 >
-                  {supportsInAppUpdate ? strings.installUpdate : strings.openReleasePage}
+                  {strings.installUpdate}
                 </button>
               )}
             </div>
@@ -813,7 +817,7 @@ export default function SettingsModal({
           <div className="p-3 bg-cozy-card/60 dark:bg-night-card/60 rounded-xl border border-cozy-border/40 dark:border-night-border/40 flex items-center justify-between text-[11px] text-cozy-muted font-sans">
             <div className="flex items-center gap-1.5">
               <Info size={13} className="text-cozy-accent dark:text-night-accent" />
-              <span>{strings.appInfo}</span>
+              <span>{strings.appInfo.replace('{version}', appVersion)}</span>
             </div>
             <span>
               {strings.developedBy} <strong className="text-cozy-accent dark:text-night-accent font-semibold">{profile.nickname}</strong>
