@@ -3,8 +3,12 @@ import { useState, useEffect } from 'react';
 import {
   X, Globe, Maximize2, Cpu, User, Sliders, ZoomIn,
   RotateCcw, Monitor, Sun, Moon, Info, Volume2, FolderOpen, HelpCircle,
-  CheckCircle2, AlertCircle, RefreshCw, AlertTriangle
+  CheckCircle2, AlertCircle, RefreshCw, AlertTriangle,
+  Download
 } from 'lucide-react';
+import {
+  checkForUpdate, installUpdate, openReleasesPage, softRelaunch, supportsInAppUpdate,
+} from '../services/updateService';
 import { invoke } from '@tauri-apps/api/core';
 import { Lang, t } from '../services/i18n';
 import { SoundPreset, cozySound } from '../services/sound';
@@ -56,6 +60,8 @@ interface SettingsModalProps {
   onVaultConfigChange: (config: VaultConfig) => void;
   aiEnabled: boolean;
   onAiEnabledChange: (enabled: boolean) => void;
+  autoUpdate: boolean;
+  onAutoUpdateChange: (enabled: boolean) => void;
 }
 
 const EMOJI_OPTIONS = ['☕', '🌿', '🦉', '✨', '🌙', '🎨', '🪐', '🦊', '🌊', '📖', '🕯️', '🥨'];
@@ -84,6 +90,8 @@ export default function SettingsModal({
   onVaultConfigChange,
   aiEnabled,
   onAiEnabledChange,
+  autoUpdate,
+  onAutoUpdateChange,
 }: SettingsModalProps) {
   // Стан розгортання підказки про приватність сховища (має бути ВСЕРЕДИНІ компонента!)
   const [showVaultSecurity, setShowVaultSecurity] = useState(false);
@@ -94,6 +102,42 @@ export default function SettingsModal({
   // Стан перевірки сервера
   const [isCheckingServer, setIsCheckingServer] = useState(false);
   const [serverStatus, setServerStatus] = useState<ServerStatusResult | null>(null);
+
+  // Стан оновлень: idle → checking → latest/available/unreachable → installing
+  const [updState, setUpdState] = useState<{
+    phase: 'idle' | 'checking' | 'latest' | 'available' | 'unreachable' | 'installing';
+    version?: string;
+    pct?: number;
+  }>({ phase: 'idle' });
+
+  const handleCheckUpdate = async () => {
+    setUpdState({ phase: 'checking' });
+    const r = await checkForUpdate();
+    if (r.status === 'up-to-date') setUpdState({ phase: 'latest' });
+    else if (r.status === 'available') setUpdState({ phase: 'available', version: r.version });
+    else setUpdState({ phase: 'unreachable' });
+  };
+
+  const handleInstallUpdate = async () => {
+    // План Б (macOS без Developer ID): відкриваємо Releases у браузері
+    if (!supportsInAppUpdate) {
+      try { await openReleasesPage(); } catch (err) { console.error(err); }
+      return;
+    }
+    setUpdState((s) => ({ ...s, phase: 'installing', pct: 0 }));
+    try {
+      await installUpdate(({ downloaded, total }) =>
+        setUpdState((s) => ({
+          ...s,
+          pct: total ? Math.min(99, Math.round((downloaded / total) * 100)) : s.pct,
+        })),
+      );
+      await softRelaunch();
+    } catch (err) {
+      console.error('Update install failed:', err);
+      setUpdState((s) => ({ ...s, phase: 'available' }));
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -697,7 +741,75 @@ export default function SettingsModal({
             </select>
           </div>
 
-          {/* 10. НИЖНІЙ КОЛОНТИТУЛ */}
+          {/* 10. ОНОВЛЕННЯ */}
+          <div className="p-4 bg-cozy-card dark:bg-night-card rounded-xl border border-cozy-border/60 dark:border-night-border/60 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Download size={16} className="text-cozy-accent dark:text-night-accent" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-cozy-muted">
+                  {strings.updatesTitle}
+                </span>
+              </div>
+              <label className="flex items-center gap-2 text-xs text-cozy-muted cursor-pointer hover:text-cozy-text select-none">
+                <input
+                  type="checkbox"
+                  checked={autoUpdate}
+                  onChange={(e) => onAutoUpdateChange(e.target.checked)}
+                  className="rounded accent-cozy-accent cursor-pointer"
+                />
+                <span className="font-medium text-cozy-text dark:text-night-text">
+                  {strings.autoUpdateCheck}
+                </span>
+              </label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCheckUpdate}
+                disabled={updState.phase === 'checking' || updState.phase === 'installing'}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cozy-surface dark:bg-night-surface border border-cozy-border dark:border-night-border hover:border-cozy-accent text-xs font-medium transition-colors cursor-pointer disabled:opacity-40"
+              >
+                <RefreshCw size={13} className={updState.phase === 'checking' ? 'animate-spin text-cozy-accent' : ''} />
+                <span>{updState.phase === 'checking' ? strings.checkingUpdates : strings.checkNow}</span>
+              </button>
+
+              {updState.phase === 'available' && (
+                <button
+                  type="button"
+                  onClick={handleInstallUpdate}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cozy-accent text-white dark:bg-night-accent dark:text-night-bg text-xs font-medium shadow-xs cursor-pointer hover:opacity-90 transition-opacity"
+                >
+                  {supportsInAppUpdate ? strings.installUpdate : strings.openReleasePage}
+                </button>
+              )}
+            </div>
+
+            {updState.phase === 'installing' && (
+              <div className="h-1.5 rounded bg-cozy-surface dark:bg-night-card overflow-hidden">
+                <div
+                  className="h-full bg-cozy-accent dark:bg-night-accent transition-all duration-200"
+                  style={{ width: `${updState.pct ?? 0}%` }}
+                />
+              </div>
+            )}
+
+            {updState.phase === 'latest' && (
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400">{strings.upToDate}</p>
+            )}
+            {updState.phase === 'available' && updState.version && (
+              <p className="text-[11px] text-cozy-text dark:text-night-text">
+                {strings.updateAvailable} <strong className="font-mono">v{updState.version}</strong>
+              </p>
+            )}
+            {updState.phase === 'unreachable' && (
+              <p className="text-[11px] text-cozy-muted italic">{strings.updateUnreachable}</p>
+            )}
+
+            <p className="text-[10px] text-cozy-muted">{strings.autoUpdateHint}</p>
+          </div>
+
+          {/* 11. НИЖНІЙ КОЛОНТИТУЛ */}
           <div className="p-3 bg-cozy-card/60 dark:bg-night-card/60 rounded-xl border border-cozy-border/40 dark:border-night-border/40 flex items-center justify-between text-[11px] text-cozy-muted font-sans">
             <div className="flex items-center gap-1.5">
               <Info size={13} className="text-cozy-accent dark:text-night-accent" />

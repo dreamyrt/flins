@@ -75,8 +75,13 @@ export default function AiHelpModal({ isOpen, onClose, lang }: AiHelpModalProps)
           </div>
           <p className="text-xs text-cozy-muted leading-relaxed">
             {lang === 'uk'
-              ? 'На відміну від хмарних сервісів, локальна нейромережа працює виключно на залізі вашого ПК. Жодна літера ваших особистих думок, щоденників чи записів ніколи не відправляється в інтернет.'
-              : 'Unlike cloud services, a local neural network runs entirely on your PC. Not a single word of your personal thoughts or entries ever leaves your device.'}
+              ? 'На відміну від хмарних сервісів, локальна нейромережа працює виключно на залізі вашого ПК. Жодна літера ваших особистих думок, щоденників чи записів ніколи не відправляється в інтернет. Єдиний вихід назовні — перевірка оновлень на GitHub (її можна вимкнути в Налаштуваннях → Оновлення); під час неї передається лише версія застунку, жодних ваших даних.'
+              : 'Unlike cloud services, a local neural network runs entirely on your PC. Not a single word of your personal thoughts or entries ever leaves your device. The only outbound call is the update check to GitHub (disable it in Settings → Updates); it sends only the app version, never your data.'}
+          </p>
+          <p className="text-[11px] text-cozy-muted/80 leading-relaxed">
+            {lang === 'uk'
+              ? '⚙️ Мережеві винятки (жодних ваших даних): пошук локального ШІ-сервера на вашому ж ПК та опційна перевірка оновлень на GitHub (раз на добу, вимикається в Налаштуваннях → Оновлення).'
+              : '⚙️ Network exceptions (contain none of your data): local AI server discovery on your own machine, and an optional once-a-day GitHub update check (disable in Settings → Updates).'}
           </p>
         </div>
 

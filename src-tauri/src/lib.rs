@@ -216,6 +216,8 @@ pub fn run() {
     let db = Database::new().expect("Не вдалося ініціалізувати SQLite базу даних");
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             // На Windows знімаємо стандартну системну рамку для наших затишних кнопок

@@ -26,6 +26,9 @@ import logoLight from './assets/logo-light.png';
 import logoDarkTransparent from './assets/logo-dark-transparent.png';
 import logoLightTransparent from './assets/logo-light-transparent.png';
 import WindowControls from './components/common/WindowControls';
+import {
+  checkForUpdate, installUpdate, openReleasesPage, softRelaunch, supportsInAppUpdate,
+} from './services/updateService';
 
 
 
@@ -88,6 +91,9 @@ export default function App() {
   const [apiUrl, setApiUrl] = useState('http://localhost:1234/v1');
   const [soundPreset, setSoundPreset] = useState<SoundPreset>('kalimba');
   const [aiEnabled, setAiEnabled] = useState<boolean>(true);
+  const [autoUpdate, setAutoUpdate] = useState<boolean>(true);
+  const [pendingUpdate, setPendingUpdate] = useState<string | null>(null);
+  const [updateInstalling, setUpdateInstalling] = useState(false);
 
   const [vaultConfig, setVaultConfig] = useState<VaultConfig>({
     enabled: false,
@@ -138,6 +144,43 @@ export default function App() {
 
   const strings = t[lang];
 
+  // Автоматична перевірка оновлень: не частіше ніж раз на 20 годин, лише з дозволу.
+  // Маркер останньої перевірки пишем ДО запиту — щоб StrictMode подвійний прогін
+  // не робив два міклайти, і щоб «немає мережі» не чинило повторні спроби щосекунди.
+  useEffect(() => {
+    if (!autoUpdate) return;
+    const timer = window.setTimeout(async () => {
+      try {
+        const last = await dbService.loadSetting<number>('lastAutoUpdateCheck', 0);
+        const now = Date.now();
+        if (now - last < 20 * 3600 * 1000) return;
+        await dbService.saveSetting('lastAutoUpdateCheck', now);
+        const r = await checkForUpdate();
+        if (r.status === 'available') setPendingUpdate(r.version);
+      } catch (err) {
+        console.error('Auto-update check failed:', err);
+      }
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [autoUpdate]);
+
+  const handlePendingUpdateInstall = async () => {
+    setUpdateInstalling(true);
+    try {
+      if (supportsInAppUpdate) {
+        await installUpdate();
+        await softRelaunch();
+      } else {
+        await openReleasesPage();
+        setPendingUpdate(null);
+      }
+    } catch (err) {
+      console.error('Update install failed:', err);
+      setUpdateInstalling(false);
+      setPendingUpdate(null);
+    }
+  };
+
   useEffect(() => {
     dbService.loadSetting<ThemeMode>('themeMode', 'system').then(setThemeMode);
     dbService.loadSetting<Lang>('lang', 'uk').then(setLang);
@@ -150,6 +193,7 @@ export default function App() {
     });
     dbService.loadSetting<VaultConfig>('vaultConfig', vaultConfig).then(setVaultConfig);
     dbService.loadSetting<boolean>('aiEnabled', true).then(setAiEnabled);
+    dbService.loadSetting<boolean>('autoUpdate', true).then(setAutoUpdate);
   }, []);
 
   useEffect(() => {
@@ -912,6 +956,17 @@ export default function App() {
         onClose={() => setPageToDelete(null)}
       />
 
+      {/* Діалог знайденого оновлення */}
+      <ConfirmModal
+        isOpen={pendingUpdate !== null}
+        title={strings.updateFoundTitle}
+        message={strings.updateFoundBody.replace('{version}', pendingUpdate ?? '')}
+        confirmText={updateInstalling ? strings.installing : supportsInAppUpdate ? strings.installUpdate : strings.openReleasePage}
+        cancelText={strings.close}
+        onConfirm={handlePendingUpdateInstall}
+        onClose={() => setPendingUpdate(null)}
+      />
+
       {/* Налаштування */}
       <SettingsModal
         isOpen={isSettingsOpen}
@@ -961,6 +1016,11 @@ export default function App() {
           setAiEnabled(v);
           dbService.saveSetting('aiEnabled', v);
           if (!v) setIsAiOpen(false);
+        }}
+        autoUpdate={autoUpdate}
+        onAutoUpdateChange={(v) => {
+          setAutoUpdate(v);
+          dbService.saveSetting('autoUpdate', v);
         }}
       />
 

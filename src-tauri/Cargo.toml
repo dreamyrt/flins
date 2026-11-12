@@ -22,10 +22,14 @@ rusqlite = { version = "0.31", features = ["bundled"] }
 rfd = "0.15"
 # Кросплатформенні папки даних (AppData на Windows, Application Support на Mac)
 dirs-next = "2.0"
+tauri-plugin-process = "2"
 
 # ЗАХИСТ: компілюється виключно на macOS!
 [target.'cfg(target_os = "macos")'.dependencies]
 cocoa = "0.27.0"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "2"
 
 [profile.release]
 codegen-units = 1

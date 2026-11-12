@@ -53,12 +53,12 @@
 
 | № | Задача | Чому / Ризик |
 |---|--------|--------------|
-| 3.1 | Акаунт GitHub + публічне репо `flins` | безкоштовно |
-| 3.2 | Ключ підпису: `pnpm tauri signer generate -w ~/.tauri/flins.key` | приватний — ТІЛЬКИ в GitHub Secrets |
-| 3.3 | tauri-plugin-updater + tauri-plugin-process, createUpdaterArtifacts | Windows: автооновлення працює безкоштовно |
-| 3.4 | ⚠️ macOS: автооновлення потребує Developer ID ($99/рік). План Б: кнопка «Завантажити .dmg» з лінком | рішення не термінове |
-| 3.5 | Тумблер «Автоперевірка оновлень» у SettingsModal + UK/EN | бренд приватності |
-| 3.6 | Оновити довідку AiHelpModal: куди і навіщо застосунок дзвонить | чесність із користувачем |
+| 3.1 | Акаунт GitHub + публічне репо `flins` | ✅ https://github.com/dreamyrt/flins |
+| 3.2 | Ключ підпису (minisign) | ✅ pubkey у вжитку, приватний — лише на диску |
+| 3.3 | tauri-plugin-updater + process, createUpdaterArtifacts | ✅ 2026-11-12 |
+| 3.4 | ⚠️ macOS без Developer ID → План Б: кнопка «Відкрити сторінку релізу» | ✅ вбудовано в код |
+| 3.5 | Тумблер «Автоперевірка оновлень» у SettingsModal + UK/EN | ✅ секція 10 |
+| 3.6 | Оновити довідку AiHelpModal: куди і навіщо застосунок дзвонить | ✅ 2026-11-12 (список мережевих винятків UK/EN) |
 
 ---
 
