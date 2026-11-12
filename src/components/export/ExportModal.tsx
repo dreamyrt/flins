@@ -68,9 +68,10 @@ export default function ExportModal({
         }
 
         switch (block.type) {
-          case 'heading':
+          case 'heading': {
             const level = block.props?.level || 1;
             return `${'#'.repeat(level)} ${text}\n`;
+          }
           case 'bulletListItem':
             return `- ${text}`;
           case 'numberedListItem':

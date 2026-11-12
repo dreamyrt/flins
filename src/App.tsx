@@ -167,12 +167,8 @@ export default function App() {
     };
 
     const applyTheme = () => {
-      let activeIsDark = false;
-      if (themeMode === 'system') {
-        activeIsDark = mediaQuery.matches;
-      } else {
-        activeIsDark = themeMode === 'dark';
-      }
+      const activeIsDark =
+        themeMode === 'system' ? mediaQuery.matches : themeMode === 'dark';
 
       setIsDark(activeIsDark);
       if (activeIsDark) {

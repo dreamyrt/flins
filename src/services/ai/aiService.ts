@@ -112,7 +112,7 @@ export function extractCleanResponseText(rawContent: string, rawReasoning: strin
     if (splitMatch.length > 1) {
       text = splitMatch[splitMatch.length - 1].trim();
     } else {
-      const lines = text.split('\n').filter(l => !/^\s*(?:Thinking Process|\*|\d+\.|\-)\s*(?:\*\*)?(?:Analyze|Role|Date|Language|Author|Input|Task|Critical)/i.test(l));
+      const lines = text.split('\n').filter(l => !/^\s*(?:Thinking Process|\*|\d+\.|-)\s*(?:\*\*)?(?:Analyze|Role|Date|Language|Author|Input|Task|Critical)/i.test(l));
       text = lines.join('\n').trim();
     }
   }
