@@ -736,8 +736,8 @@ export default function SettingsModal({
               onChange={(e) => onLangChange(e.target.value as Lang)}
               className="text-xs bg-cozy-surface dark:bg-night-surface border border-cozy-border dark:border-night-border rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer"
             >
-              <option value="uk">Українська 🇺🇦</option>
-              <option value="en">English 🇬🇧</option>
+              <option value="uk">Українська</option>
+              <option value="en">English</option>
             </select>
           </div>
 

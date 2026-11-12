@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, Component, ErrorInfo, ReactNode } from 're
 import {
   BookOpen, FolderClosed, Moon, Sun, Settings,
   FileText, Bookmark, Grid, PanelLeftClose, PanelLeft,
-  Plus, Star, Calendar, Share2, Trash2, ChevronDown, Monitor, CheckCircle2, RefreshCw
+  Plus, Star, Calendar, Share2, Trash2, ChevronDown, Monitor, CheckCircle2, RefreshCw,
+  Sparkle
 } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import Editor, { EditorHandle } from './components/editor/Editor';
@@ -562,7 +563,7 @@ export default function App() {
                   }`}
                 >
           {/* Ліва частина */}
-          <div className="flex items-center gap-2 min-w-0 flex-shrink overflow-visible">
+          <div className="flex items-center gap-2 min-w-0 flex-shrink overflow-visible" data-tauri-drag-region>
             {activeTab === 'notes' ? (
               <span className="text-xs font-serif text-cozy-text dark:text-night-text font-medium truncate max-w-[130px]">
                 {notesHook.currentNote ? notesHook.currentNote.title : strings.workspace}
@@ -691,7 +692,7 @@ export default function App() {
           </div>
 
           {/* Права частина: збалансована висота h-[28px] для всіх елементів */}
-          <div className="flex items-center gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-1.5 flex-shrink-0" data-tauri-drag-region>
             {/* 1. Фактура (іконки збільшено з 12px до 13.5px) */}
             <div className="h-[28px] flex items-center bg-cozy-surface dark:bg-night-surface border border-cozy-border dark:border-night-border rounded-lg p-0.5">
               <button
@@ -739,8 +740,8 @@ export default function App() {
                 }`}
                 title={strings.aiHelper}
               >
-                <span className="sparkle-wiggle text-[30px] leading-none select-none relative -top-[3.3px] flex items-center justify-center font-bold">
-                  ✦
+                <span className="sparkle-wiggle leading-none select-none relative -top-[3.3px] flex items-center justify-center">
+                  <Sparkle size={20} strokeWidth={2.2} />
                 </span>
                 <span className="font-serif tracking-wide font-semibold text-xs leading-none flex items-center">
                   {isAiOpen ? 'AI' : 'Flins AI'}
@@ -836,8 +837,8 @@ export default function App() {
                         className="group relative w-10 h-10 flex items-center justify-center cursor-pointer text-cozy-accent dark:text-night-accent hover:scale-110 transition-transform"
                         title={strings.updateRemarkHint}
                       >
-                        <span className="sparkle-wiggle text-[37px] leading-none select-none font-bold pointer-events-none">
-                          ✦
+                        <span className="sparkle-wiggle leading-none select-none font-bold pointer-events-none flex items-center justify-center">
+                          <Sparkle size={30} strokeWidth={2.2} />
                         </span>
                         <span className="opacity-0 group-hover:opacity-90 transition-opacity font-serif italic text-[10px] text-cozy-muted absolute -top-5 whitespace-nowrap pointer-events-none bg-cozy-surface/90 dark:bg-night-surface/90 px-1.5 py-0.5 rounded shadow-xs border border-cozy-border/40">
                           {strings.pageSummaryHint}

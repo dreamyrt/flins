@@ -49,6 +49,35 @@
 }
 
 /* Нативна плавна анімація появи */
+/* ── Скролбар ────────────────────────────────────────────── */
+/* На macOS він оверлейний і майже невидимий; на Windows WebView2 показує */
+/* стандартну білу смугу — перекрашуємо її у фірмову палітру. */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(200, 125, 85, 0.35);
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(200, 125, 85, 0.55);
+  background-clip: content-box;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(167, 139, 250, 0.30);
+  background-clip: content-box;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(167, 139, 250, 0.5);
+  background-clip: content-box;
+}
+
 @keyframes cozyPopIn {
   0% {
     opacity: 0;
