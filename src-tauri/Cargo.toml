@@ -1,6 +1,6 @@
 [package]
 name = "flins"
-version = "0.2.3"
+version = "0.3.0"
 description = "Flins — Native Private Journal & Notes with AI Librarian"
 authors = ["dreamyr"]
 edition = "2024"
@@ -17,7 +17,16 @@ tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-rusqlite = { version = "0.31", features = ["bundled"] }
+# Шифрування БД (Фаза 7): SQLCipher з vendored OpenSSL — збірка самодостатня, без системного libcrypto
+rusqlite = { version = "0.31", features = ["bundled-sqlcipher-vendored-openssl"] }
+# Ключ БД живе в OS-сховищі, НЕ в папці з базою.
+# ВАЖЛИВО: без features під macOS/Windows keyring 3.x мовчки падає в MOCK-сховище (in-memory!),
+# «збереження» вдається, але ключ зникає разом із процесом → база стає нечитабельною.
+keyring = { version = "3", features = ["apple-native", "windows-native"] }
+# Пароль застосунку (6.3): argon2id з вбудованим сальтом у PHC-хеш
+argon2 = "0.5"
+# OsRng для генерації сальта (раніше був за feature rand_core/getrandom, який argon2 не вмикає)
+rand_core = { version = "0.6", features = ["getrandom"] }
 # Нативні системні діалоги (Finder на Mac, File Explorer на Windows)
 rfd = "0.15"
 # Кросплатформенні папки даних (AppData на Windows, Application Support на Mac)

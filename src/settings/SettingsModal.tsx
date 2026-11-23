@@ -5,7 +5,7 @@ import {
   X, Globe, Maximize2, Cpu, User, Sliders, ZoomIn,
   RotateCcw, Monitor, Sun, Moon, Info, Volume2, FolderOpen, HelpCircle,
   CheckCircle2, AlertCircle, RefreshCw, AlertTriangle,
-  Download
+  Download, ShieldCheck
 } from 'lucide-react';
 import {
   checkForUpdate, installUpdate, openReleasesPage, softRelaunch,
@@ -15,6 +15,10 @@ import { Lang, t } from '../services/i18n';
 import { SoundPreset, cozySound } from '../services/sound';
 import { VaultConfig } from '../services/dbService';
 import { detectLocalServer, ServerStatusResult, classifyNetworkType } from '../services/ai/aiService';
+import {
+  appPasswordExists, setAppPassword, changeAppPassword, removeAppPassword, unlockApp,
+} from '../services/passwordService';
+import RecoveryCodeCard from '../components/common/RecoveryCodeCard';
 import AiHelpModal from '../services/ai/AiHelpModal';
 import { isMac } from '../services/platform';
 
@@ -41,6 +45,7 @@ export interface AestheticsConfig {
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onShowOnboarding: () => void;
   lang: Lang;
   onLangChange: (lang: Lang) => void;
   isWide: boolean;
@@ -71,6 +76,7 @@ const BG_COLOR_OPTIONS = ['#C87D55', '#A78BFA', '#84A98C', '#E09F3E', '#5B8E7D',
 export default function SettingsModal({
   isOpen,
   onClose,
+  onShowOnboarding,
   lang,
   onLangChange,
   isWide,
@@ -110,6 +116,115 @@ export default function SettingsModal({
   const [isCheckingServer, setIsCheckingServer] = useState(false);
   const [serverStatus, setServerStatus] = useState<ServerStatusResult | null>(null);
 
+  // Стан безпеки (6.3.4): пароль на застосунок
+  const [pwExists, setPwExists] = useState(false);
+  const [secMsg, setSecMsg] = useState<string | null>(null);
+  const [secBusy, setSecBusy] = useState(false);
+  const [secCur, setSecCur] = useState('');
+  const [secNew, setSecNew] = useState('');
+  const [secConf, setSecConf] = useState('');
+  // 6.4 — щойно виданий recovery-код + дія, яка його видав (показується один раз)
+  const [recCode, setRecCode] = useState<{ code: string; kind: 'set' | 'change' } | null>(null);
+  // Покроковий flow «Безпеки»: одне поле → кнопки спалахують → за потреби наступні поля
+  const [secStage, setSecStage] = useState<'enter' | 'confirmSet' | 'gate' | 'changeNew'>('enter');
+  const [pwVerified, setPwVerified] = useState(false);
+
+  // Дебаунс-перевірка поточного пароля на кроці gate: кнопки активні лише коли вірний
+  useEffect(() => {
+    if (!pwExists || secStage !== 'gate' || secCur.trim().length < 4) {
+      setPwVerified(false);
+      return;
+    }
+    const t = window.setTimeout(async () => {
+      try {
+        setPwVerified(await unlockApp(secCur));
+      } catch {
+        setPwVerified(false);
+      }
+    }, 450);
+    return () => window.clearTimeout(t);
+  }, [secCur, pwExists, secStage]);
+
+  const clearSecFields = () => {
+    setSecCur('');
+    setSecNew('');
+    setSecConf('');
+  };
+
+  const handleSecSet = async () => {
+    if (secBusy) return;
+    if (secNew.trim().length < 4) {
+      setSecMsg(strings.security.short);
+      return;
+    }
+    if (secNew !== secConf) {
+      setSecMsg(strings.security.mismatch);
+      return;
+    }
+    setSecBusy(true);
+    try {
+      const code = await setAppPassword(secNew);
+      setPwExists(true);
+      setSecMsg(null);
+      setRecCode({ code, kind: 'set' });
+      setSecStage('gate');
+      clearSecFields();
+    } catch (e) {
+      setSecMsg(String(e));
+    } finally {
+      setSecBusy(false);
+    }
+  };
+
+  const handleSecChange = async () => {
+    if (secBusy) return;
+    if (secNew.trim().length < 4) {
+      setSecMsg(strings.security.short);
+      return;
+    }
+    if (secNew !== secConf) {
+      setSecMsg(strings.security.mismatch);
+      return;
+    }
+    setSecBusy(true);
+    try {
+      const code = await changeAppPassword(secCur, secNew);
+      if (code) {
+        setSecMsg(null);
+        setRecCode({ code, kind: 'change' });
+        setSecStage('gate');
+        clearSecFields();
+      } else {
+        setSecMsg(strings.security.wrong);
+      }
+    } catch (e) {
+      setSecMsg(String(e));
+    } finally {
+      setSecBusy(false);
+    }
+  };
+
+  const handleSecRemove = async () => {
+    if (secBusy) return;
+    setSecBusy(true);
+    try {
+      const ok = await removeAppPassword(secCur);
+      if (ok) {
+        setPwExists(false);
+        setSecMsg(strings.security.pwRemoved);
+        setSecStage('enter');
+        setPwVerified(false);
+        clearSecFields();
+      } else {
+        setSecMsg(strings.security.wrong);
+      }
+    } catch (e) {
+      setSecMsg(String(e));
+    } finally {
+      setSecBusy(false);
+    }
+  };
+
   // Стан оновлень: idle → checking → latest/available/unreachable → installing
   const [updState, setUpdState] = useState<{
     phase: 'idle' | 'checking' | 'latest' | 'available' | 'unreachable' | 'installing';
@@ -148,6 +263,15 @@ export default function SettingsModal({
       setShouldRender(true);
       const timer = setTimeout(() => setIsAnimated(true), 25);
       handleCheckServer();
+      // 6.3.4 — оновлюємо стан пароля при кожному відкритті
+      appPasswordExists().then((v) => {
+        setPwExists(v);
+        setSecStage(v ? 'gate' : 'enter');
+        setPwVerified(false);
+        setSecMsg(null);
+        setRecCode(null);
+        clearSecFields();
+      });
       return () => clearTimeout(timer);
     } else {
       setIsAnimated(false);
@@ -813,14 +937,232 @@ export default function SettingsModal({
             <p className="text-[10px] text-cozy-muted">{strings.autoUpdateHint}</p>
           </div>
 
+          {/* 10b. БЕЗПЕКА — пароль на вхід (6.3.4) */}
+          <div className="p-4 bg-cozy-card dark:bg-night-card rounded-xl border border-cozy-border/60 dark:border-night-border/60 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={16} className="text-cozy-accent dark:text-night-accent" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-cozy-muted">
+                  {strings.security.title}
+                </span>
+              </div>
+              <span className="text-[10px] text-cozy-muted dark:text-night-muted">
+                {pwExists ? (lang === 'uk' ? 'Пароль встановлено 🔒' : 'Password set 🔒') : strings.security.notSet}
+              </span>
+            </div>
+
+            {recCode ? (
+              <RecoveryCodeCard
+                code={recCode.code}
+                lang={lang}
+                onClose={() => {
+                  setRecCode(null);
+                  setSecMsg(
+                    recCode.kind === 'set' ? strings.security.pwSet : strings.security.pwChanged,
+                  );
+                }}
+              />
+            ) : !pwExists ? (
+              secStage === 'enter' ? (
+                <div className="space-y-2 animate-[cozyPopIn_0.3s_ease-out]">
+                  <input
+                    type="password"
+                    autoFocus
+                    value={secNew}
+                    placeholder={strings.security.newPw}
+                    onChange={(e) => {
+                      setSecNew(e.target.value);
+                      setSecMsg(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && secNew.trim().length >= 4) setSecStage('confirmSet');
+                    }}
+                    className="w-full text-xs bg-cozy-surface dark:bg-night-surface border border-cozy-border dark:border-night-border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cozy-accent/50 dark:focus:ring-night-accent/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSecMsg(null);
+                      setSecStage('confirmSet');
+                    }}
+                    disabled={secNew.trim().length < 4}
+                    className="px-3 py-1.5 rounded-lg bg-cozy-accent text-white dark:bg-night-accent dark:text-night-bg text-xs font-medium shadow-xs cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-40"
+                  >
+                    {strings.security.setBtn}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2 animate-[cozyPopIn_0.3s_ease-out]">
+                  <input
+                    type="password"
+                    autoFocus
+                    value={secConf}
+                    placeholder={strings.security.confirm}
+                    onChange={(e) => {
+                      setSecConf(e.target.value);
+                      setSecMsg(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSecSet();
+                    }}
+                    className="w-full text-xs bg-cozy-surface dark:bg-night-surface border border-cozy-border dark:border-night-border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cozy-accent/50 dark:focus:ring-night-accent/50"
+                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSecSet}
+                      disabled={secBusy || secConf.length < 4 || secConf !== secNew}
+                      className="px-3 py-1.5 rounded-lg bg-cozy-accent text-white dark:bg-night-accent dark:text-night-bg text-xs font-medium shadow-xs cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-40"
+                    >
+                      {strings.security.confirmBtn}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSecStage('enter')}
+                      className="text-xs text-cozy-muted dark:text-night-muted hover:text-cozy-accent dark:hover:text-night-accent transition-colors cursor-pointer"
+                    >
+                      {strings.security.back}
+                    </button>
+                    {secBusy && (
+                      <RefreshCw size={13} className="animate-spin text-cozy-accent dark:text-night-accent" />
+                    )}
+                  </div>
+                </div>
+              )
+            ) : secStage === 'gate' ? (
+              <div className="space-y-2 animate-[cozyPopIn_0.3s_ease-out]">
+                <input
+                  type="password"
+                  autoFocus
+                  value={secCur}
+                  placeholder={strings.security.current}
+                  onChange={(e) => {
+                    setSecCur(e.target.value);
+                    setSecMsg(null);
+                  }}
+                  className="w-full text-xs bg-cozy-surface dark:bg-night-surface border border-cozy-border dark:border-night-border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cozy-accent/50 dark:focus:ring-night-accent/50"
+                />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSecMsg(null);
+                      setSecStage('changeNew');
+                    }}
+                    disabled={!pwVerified || secBusy}
+                    className="px-3 py-1.5 rounded-lg bg-cozy-accent text-white dark:bg-night-accent dark:text-night-bg text-xs font-medium shadow-xs cursor-pointer hover:opacity-90 transition-all disabled:opacity-40"
+                  >
+                    {strings.security.changeBtn}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSecRemove}
+                    disabled={!pwVerified || secBusy}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cozy-surface dark:bg-night-surface border border-cozy-border dark:border-night-border hover:border-cozy-accent text-xs font-medium text-cozy-muted dark:text-night-muted transition-colors cursor-pointer disabled:opacity-40"
+                  >
+                    {strings.security.removeBtn}
+                  </button>
+                  {pwVerified && (
+                    <span className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 animate-[cozyPopIn_0.25s_ease-out]">
+                      <CheckCircle2 size={12} />
+                      {strings.security.verified}
+                    </span>
+                  )}
+                  {secBusy && (
+                    <RefreshCw size={13} className="animate-spin text-cozy-accent dark:text-night-accent" />
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2 animate-[cozyPopIn_0.3s_ease-out]">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="password"
+                    autoFocus
+                    value={secNew}
+                    placeholder={strings.security.newPw}
+                    onChange={(e) => {
+                      setSecNew(e.target.value);
+                      setSecMsg(null);
+                    }}
+                    className="flex-1 text-xs bg-cozy-surface dark:bg-night-surface border border-cozy-border dark:border-night-border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cozy-accent/50 dark:focus:ring-night-accent/50"
+                  />
+                  <input
+                    type="password"
+                    value={secConf}
+                    placeholder={strings.security.confirm}
+                    onChange={(e) => {
+                      setSecConf(e.target.value);
+                      setSecMsg(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSecChange();
+                    }}
+                    className="flex-1 text-xs bg-cozy-surface dark:bg-night-surface border border-cozy-border dark:border-night-border rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cozy-accent/50 dark:focus:ring-night-accent/50"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSecChange}
+                    disabled={secBusy || secNew.trim().length < 4 || secNew !== secConf}
+                    className="px-3 py-1.5 rounded-lg bg-cozy-accent text-white dark:bg-night-accent dark:text-night-bg text-xs font-medium shadow-xs cursor-pointer hover:opacity-90 transition-opacity disabled:opacity-40"
+                  >
+                    {strings.security.confirmBtn}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSecStage('gate');
+                      setSecNew('');
+                      setSecConf('');
+                    }}
+                    className="text-xs text-cozy-muted dark:text-night-muted hover:text-cozy-accent dark:hover:text-night-accent transition-colors cursor-pointer"
+                  >
+                    {strings.security.back}
+                  </button>
+                  {secBusy && (
+                    <RefreshCw size={13} className="animate-spin text-cozy-accent dark:text-night-accent" />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {secMsg && (
+              <p
+                className={`text-[11px] ${
+                  secMsg === strings.security.wrong ||
+                  secMsg === strings.security.mismatch ||
+                  secMsg === strings.security.short
+                    ? 'text-red-500 dark:text-red-400'
+                    : 'text-cozy-accent dark:text-night-accent'
+                }`}
+              >
+                {secMsg}
+              </p>
+            )}
+
+            <p className="text-[10px] text-cozy-muted dark:text-night-muted/70 leading-relaxed">
+              {strings.security.note}
+            </p>
+          </div>
+
           {/* 11. НИЖНІЙ КОЛОНТИТУЛ */}
           <div className="p-3 bg-cozy-card/60 dark:bg-night-card/60 rounded-xl border border-cozy-border/40 dark:border-night-border/40 flex items-center justify-between text-[11px] text-cozy-muted font-sans">
             <div className="flex items-center gap-1.5">
               <Info size={13} className="text-cozy-accent dark:text-night-accent" />
               <span>{strings.appInfo.replace('{version}', appVersion)}</span>
             </div>
-            <span>
+            <span className="flex items-center gap-1.5">
               {strings.developedBy} <strong className="text-cozy-accent dark:text-night-accent font-semibold">{profile.nickname}</strong>
+              {/* 6.5.1 — dev-хук: показ майстра налаштувань (скидає onboarded_version) */}
+              <button
+                onClick={onShowOnboarding}
+                title={t[lang].onboarding.devHookTip}
+                className="w-4 h-4 flex items-center justify-center rounded border border-cozy-border/60 dark:border-night-border/60 text-cozy-accent dark:text-night-accent hover:scale-125 transition-transform"
+              >
+                <span className="star-glyph text-[9px] leading-none">✦</span>
+              </button>
             </span>
           </div>
         </div>

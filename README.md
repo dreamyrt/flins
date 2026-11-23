@@ -19,7 +19,7 @@ Tauri 2 · Rust · React · BlockNote · SQLite — native desktop app for **mac
 Most journaling apps quietly send your most personal text to someone else's cloud. Flins is the opposite:
 
 - 📓 **Paper soul, digital body** — a cozy journal aesthetic: real sheets, washi tape, handwritten headers, five synthesized acoustic sounds (kalimba, harp, typewriter, zen bell, celesta) built with the Web Audio API
-- 🔒 **Local-first, always** — everything lives in a plain SQLite file in your own AppData; optional *Physical Vault* mirrors every entry as human-readable `.md` with YAML frontmatter into a folder you choose
+- 🔒 **Local-first, always** — everything lives in a single **SQLCipher-encrypted** SQLite file in your own AppData (AES-256 at rest, key held in your OS keychain — a copied `flins.db` is unreadable without it); optional *Physical Vault* mirrors every entry as human-readable `.md` with YAML frontmatter into a folder you choose
 - 🧠 **Bring-your-own AI** — connects to *your* local model through [LM Studio](https://lmstudio.ai) or [Ollama](https://ollama.com) (OpenAI-compatible API), with one-click server discovery. Not a single word leaves your machine unless you deliberately point it at a LAN/WAN server — the UI badges the network type honestly
 - 🕯️ **Five intelligent touches, one librarian** — a literary *Quill* for free-form rewriting, quick ✦ re-edit of selected text, quiet margin advice, a daily reflection prompt, and *Chronicle* summaries (weekly/monthly), all running fully offline
 - 🌗 Cozy (light) & Pastel Night (dark) themes, full **Ukrainian / English** localization, system-tray-grade polish
@@ -40,7 +40,7 @@ Grab the latest build from [**Releases**](https://github.com/dreamyrt/flins/rele
 - The app makes **no** telemetry or analytics requests, ever
 - The one outbound call is the optional update check to GitHub Releases (once/day, pure version handshake — disable it in *Settings → Updates*)
 - AI requests go only to the URL **you** configure (default: your own PC)
-- Journal DB is file-permission-protected (`0600`); for full protection of the Markdown vault, use disk encryption (FileVault / BitLocker)
+- Journal DB is encrypted at rest (SQLCipher; the key never leaves your OS keychain) and file-permission-protected (`0600`); for full protection of the Markdown vault, use disk encryption (FileVault / BitLocker)
 - Found a vulnerability? Open a private security advisory on this repo — please don't file it as a public issue
 
 ## Development
@@ -58,7 +58,7 @@ Release flow: `pnpm sync-version X.Y.Z` → commit → `git tag vX.Y.Z` → push
 
 ## Tech
 
-React 18 · TypeScript · Vite · Tailwind (custom cozy/night palettes) · BlockNote (TipTap) · Tauri 2 · Rust (rusqlite bundled, rfd, minisign updates) · Web Audio synthesis.
+React 18 · TypeScript · Vite · Tailwind (custom cozy/night palettes) · BlockNote (TipTap) · Tauri 2 · Rust (rusqlite + SQLCipher, keyring, rfd, argon2, minisign updates) · Web Audio synthesis.
 
 ---
 

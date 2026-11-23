@@ -19,6 +19,7 @@ dist-ssr
 PROJECT_CONTEXT.md
 ROADMAP.md
 docs/SECURITY.md
+SKILL.md
 
 # ЗАХИСТ СЕКРЕТІВ: ключі підпису оновлень та змінні середовища
 # ніколи не повинні потрапити в історію git (Фаза 3)

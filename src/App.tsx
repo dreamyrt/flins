@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { getVersion } from '@tauri-apps/api/app';
 import Editor, { EditorHandle } from './components/editor/Editor';
 import NotesManager from './notes/NotesManager';
 import SettingsModal, { UserProfile, AestheticsConfig, ThemeMode } from './settings/SettingsModal';
@@ -27,6 +28,9 @@ import logoLight from './assets/logo-light.png';
 import logoDarkTransparent from './assets/logo-dark-transparent.png';
 import logoLightTransparent from './assets/logo-light-transparent.png';
 import WindowControls from './components/common/WindowControls';
+import OnboardingWizard from './components/onboarding/OnboardingWizard';
+import LockScreen from './components/common/LockScreen';
+import { appPasswordExists } from './services/passwordService';
 import {
   checkForUpdate, installUpdate, openReleasesPage, softRelaunch,
 } from './services/updateService';
@@ -89,6 +93,11 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  // Фаза 6.1 — версія-гейт онбордингу: null = перевірка ще йде
+  const [needsOnboarding, setNeedsOnboarding] = useState<boolean | null>(null);
+  const [hasPriorData, setHasPriorData] = useState(false);
+  // Фаза 6.3 — UI-lock: перевірка пароля при старті
+  const [lockStatus, setLockStatus] = useState<'checking' | 'locked' | 'unlocked'>('checking');
   const [apiUrl, setApiUrl] = useState('http://localhost:1234/v1');
   const [soundPreset, setSoundPreset] = useState<SoundPreset>('kalimba');
   const [aiEnabled, setAiEnabled] = useState<boolean>(true);
@@ -192,6 +201,31 @@ export default function App() {
     dbService.loadSetting<VaultConfig>('vaultConfig', vaultConfig).then(setVaultConfig);
     dbService.loadSetting<boolean>('aiEnabled', true).then(setAiEnabled);
     dbService.loadSetting<boolean>('autoUpdate', true).then(setAutoUpdate);
+    // apiUrl раніше не персистився взагалі (скидався на дефолт при кожному старті) — виправляємо
+    dbService.loadSetting<string>('apiUrl', 'http://localhost:1234/v1').then(setApiUrl);
+  }, []);
+
+  // Фаза 6.1.3 — перевірка версії: оновились → показуємо онбординг навіть діючим юзерам.
+  useEffect(() => {
+    (async () => {
+      try {
+        const [currentVersion, storedVersion, langRaw, themeRaw, hasPw] = await Promise.all([
+          getVersion(),
+          dbService.loadSetting<string | null>('onboarded_version', null),
+          dbService.loadSetting<Lang | null>('lang', null),
+          dbService.loadSetting<ThemeMode | null>('themeMode', null),
+          appPasswordExists(),
+        ]);
+        setHasPriorData(langRaw !== null || themeRaw !== null);
+        setNeedsOnboarding(storedVersion !== currentVersion);
+        // 6.3.3 — стоїть пароль → спочатку LockScreen, онбординг і БД-контент за ним
+        setLockStatus(hasPw ? 'locked' : 'unlocked');
+      } catch {
+        // БД недоступна — не блокуємо застосунок
+        setNeedsOnboarding(false);
+        setLockStatus('unlocked');
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -420,10 +454,66 @@ export default function App() {
     };
   };
 
+  // Фаза 6.1 — завершення онбордингу: зберігаємо поточну версію як пройдену
+  const finishOnboarding = async (skipped: boolean) => {
+    try {
+      const v = await getVersion();
+      await dbService.saveSetting('onboarded_version', v);
+    } catch {
+      // не критично: worst-case онбординг покажуть ще раз
+    }
+    setNeedsOnboarding(false);
+    if (!skipped) cozySound.playClickChime();
+  };
+
   const dateFormats = getAdaptiveDateString();
 
+  // Поки перевірки (лок + онбординг) йдуть — порожній фон без «блима» основного UI
+  if (lockStatus === 'checking' || needsOnboarding === null) {
+    return <div className="h-screen w-screen bg-cozy-bg dark:bg-night-bg" />;
+  }
+
+  if (lockStatus === 'locked') {
+    return <LockScreen lang={lang} onUnlocked={() => setLockStatus('unlocked')} />;
+  }
+
+  if (needsOnboarding) {
+    return (
+      <OnboardingWizard
+        lang={lang}
+        themeMode={themeMode}
+        soundPreset={soundPreset}
+        profile={profile}
+        apiUrl={apiUrl}
+        hasPriorData={hasPriorData}
+        onLangChange={(l) => {
+          setLang(l);
+          dbService.saveSetting('lang', l);
+        }}
+        onThemeModeChange={(m) => {
+          setThemeMode(m);
+          dbService.saveSetting('themeMode', m);
+        }}
+        onSoundPresetChange={(p) => {
+          setSoundPreset(p);
+          cozySound.setPreset(p);
+          dbService.saveSetting('soundPreset', p);
+        }}
+        onProfileChange={(p) => {
+          setProfile(p);
+          dbService.saveSetting('profile', p);
+        }}
+        onApiUrlChange={(u) => {
+          setApiUrl(u);
+          dbService.saveSetting('apiUrl', u);
+        }}
+        onDone={finishOnboarding}
+      />
+    );
+  }
+
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-cozy-bg dark:bg-night-bg text-cozy-text dark:text-night-text transition-colors duration-200">
+    <div className="flex h-screen w-screen overflow-hidden bg-cozy-bg dark:bg-night-bg text-cozy-text dark:text-night-text transition-colors duration-200 animate-[sceneFadeIn_0.25s_ease-out]">
       {/* 1. Лівий Сайдбар */}
       <aside
         className={`flex flex-col justify-between bg-cozy-surface dark:bg-night-surface border-r border-cozy-border dark:border-night-border p-3 transition-all duration-300 select-none flex-shrink-0 ${
@@ -989,7 +1079,10 @@ export default function App() {
         isWide={isWide}
         onToggleWide={setIsWide}
         apiUrl={apiUrl}
-        onApiUrlChange={setApiUrl}
+        onApiUrlChange={(u) => {
+          setApiUrl(u);
+          dbService.saveSetting('apiUrl', u);
+        }}
         profile={profile}
         onProfileChange={(p) => {
           setProfile(p);
@@ -1031,6 +1124,13 @@ export default function App() {
         onAutoUpdateChange={(v) => {
           setAutoUpdate(v);
           dbService.saveSetting('autoUpdate', v);
+        }}
+        onShowOnboarding={() => {
+          // 6.5.1 dev-хук: прибиваємо flag → онбординг показується зараз і при наступному старті
+          dbService.saveSetting('onboarded_version', null);
+          setIsSettingsOpen(false);
+          setHasPriorData(true);
+          setNeedsOnboarding(true);
         }}
       />
 
