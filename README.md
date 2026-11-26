@@ -62,4 +62,4 @@ React 18 · TypeScript · Vite · Tailwind (custom cozy/night palettes) · Block
 
 ---
 
-Crafted with far too much care for a free hobby app — ✦ **dreamyr**, 2026.
+✦ **dreamyr**, 2026.
